@@ -64,7 +64,7 @@ app.get('/contacts', (req, res) => {
   });
 });
 
-app.get('/new', (req, res) => {
+app.get('/contacts/new', (req, res) => {
   res.render('new-contact');
 })
 
