@@ -55,6 +55,7 @@ app.use(express.static('public'));
 app.use(morgan('common'));
 
 
+
 app.use(express.urlencoded({ extended: false }));
 
 app.get('/', (req, res) => {
@@ -72,8 +73,34 @@ app.get('/contacts/new', (req, res) => {
 });
 
 app.post('/contacts/new', (req, res) => {
-  contactData.push({ ...req.body });
-  res.redirect('/contacts');
+  let errorMessages = [];
+
+  if (req.body.firstName.length === 0) {
+    errorMessages.push('First name is required.');
+  }
+
+  if (req.body.lastName.length === 0) {
+    errorMessages.push('Last name is required.');
+  }
+
+  if (req.body.phoneNumber.length === 0) {
+    errorMessages.push('Phone number is required.');
+  }
+
+  if (errorMessages.length > 0) {
+    res.render('new-contact', {
+      errorMessages,
+    });
+  } else {
+    contactData.push({ ...req.body });
+    res.redirect('/contacts');
+  }
+});
+
+
+// Error handler:
+app.use((err, req, res, next) => {
+  res.status(404).send(err.message);
 });
 
 app.listen(PORT, () => {
