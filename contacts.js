@@ -47,6 +47,23 @@ const sortContacts = contacts => {
   });
 };
 
+function containsNonAlpha(string) {
+  return string.match('[^a-zA-Z]') !== null;
+}
+
+function isUniqueName(name, contacts) {
+  for (let contact of contacts) {
+    if (`${contact.firstName} ${contact.lastName}` === name) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function invalidNumber(phoneNumber) {
+  return phoneNumber.replaceAll(/[0-9]/g, '#') !== '###-###-####';
+}
+
 app.set('views', './views');
 app.set('view engine', 'pug');
 
@@ -72,29 +89,56 @@ app.get('/contacts/new', (req, res) => {
   res.render('new-contact');
 });
 
-app.post('/contacts/new', (req, res) => {
-  let errorMessages = [];
-
+app.post('/contacts/new', (req, res, next) => {
+  req.body.firstName = req.body.firstName.trim();
+  req.body.lastName = req.body.lastName.trim();
+  req.body.phoneNumber = req.body.phoneNumber.trim();
+  next();
+}, (req, res, next) => {
+  res.locals.errorMessages = [];
+  next();
+}, (req, res, next) => {
   if (req.body.firstName.length === 0) {
-    errorMessages.push('First name is required.');
+    res.locals.errorMessages.push('First name is required.');
   }
-
+  next();
+}, (req, res, next) => {
+  if (containsNonAlpha(req.body.firstName) || containsNonAlpha(req.body.lastName)) {
+    res.locals.errorMessages.push('Name should contain only alphabets.');
+  }
+  next();
+}, (req, res, next) => {
   if (req.body.lastName.length === 0) {
-    errorMessages.push('Last name is required.');
+    res.locals.errorMessages.push('Last name is required.');
   }
-
+  next();
+}, (req, res, next) => {
+  if (!isUniqueName(`${req.body.firstName} ${req.body.lastName}`, contactData)) {
+    res.locals.errorMessages.push('Contact already exists.');
+  }
+  next();
+}, (req, res, next) => {
   if (req.body.phoneNumber.length === 0) {
-    errorMessages.push('Phone number is required.');
+    res.locals.errorMessages.push('Phone number is required.');
   }
-
-  if (errorMessages.length > 0) {
+  next();
+}, (req, res, next) => {
+  if (invalidNumber(req.body.phoneNumber)) {
+    res.locals.errorMessages.push('Invalid phone number format. Use ###-###-####');
+  }
+  next();
+}, (req, res, next) => {
+  if (res.locals.errorMessages.length > 0) {
     res.render('new-contact', {
-      errorMessages,
+      errorMessages: res.locals.errorMessages,
+      ...req.body
     });
   } else {
-    contactData.push({ ...req.body });
-    res.redirect('/contacts');
+    next();
   }
+}, (req, res) => {
+  contactData.push({ ...req.body });
+  res.redirect('/contacts');
 });
 
 
