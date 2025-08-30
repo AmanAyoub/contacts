@@ -54,6 +54,9 @@ app.set('view engine', 'pug');
 app.use(express.static('public'));
 app.use(morgan('common'));
 
+
+app.use(express.urlencoded({ extended: false }));
+
 app.get('/', (req, res) => {
   res.redirect('/contacts');
 });
@@ -66,7 +69,12 @@ app.get('/contacts', (req, res) => {
 
 app.get('/contacts/new', (req, res) => {
   res.render('new-contact');
-})
+});
+
+app.post('/contacts/new', (req, res) => {
+  contactData.push({ ...req.body });
+  res.redirect('/contacts');
+});
 
 app.listen(PORT, () => {
   console.log(`Listening on port ${PORT}...`);
